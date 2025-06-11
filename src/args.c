@@ -198,8 +198,8 @@ int create_output_file_path(char *input_path, char *output_path)
 #elif defined __unix__
     char *directory;
     char *bname;
-    char temp_input_path[FILENAME_LEN];  // Because libgen's basename modifies the original array
-    char filename[FILENAME_LEN];
+    char temp_input_path[FILENAME_LEN] = {0};  // Because libgen's basename modifies the original array
+    char filename[FILENAME_LEN] = {0};
 
     strncpy(temp_input_path, input_path, FILENAME_LEN);
 
