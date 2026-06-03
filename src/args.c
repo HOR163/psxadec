@@ -1,121 +1,72 @@
-#include <stdio.h>
 #include <errno.h>
-#include <getopt.h>
+#include <stdio.h>
+
 #include <stdlib.h>
 #include <string.h>
 
-#include "print_conv.h"
+#include "argparse.h"
 #include "args.h"
+#include "print_conv.h"
 
 #ifdef __unix__
 #include <libgen.h>
 #endif
 
-int read_param(int argc, char *argv[], adpcm_parameters *params)
+static char fallback_output_path[TOTAL_PATH_LEN] = {0};
+
+static const char *const usages[] = {
+    "psxadec -i ./file.vag -f 44100",
+    "psxadec -i ./file.vag -c 2 -s 0x4000 -l 0x8000 -f 48000",
+    "psxadec -i ./file.vag -c 1 -s 32 -f 22500 -o ./file.wav",
+    NULL,
+};
+
+int read_param(int argc, const char **argv, adpcm_parameters *params)
 {
+    int ret;
+
     int offset = 0;
     int interleave = 16;
     int chunks = 0;
     int channels = 1;
     int frequency = 0;
-    char *input_path = (char *)calloc(TOTAL_PATH_LEN, sizeof(char));
-    char *output_path = (char *)calloc(TOTAL_PATH_LEN, sizeof(char));
+    char *input_path = NULL;
+    char *output_path = NULL;
 
-    // For correct freeing of memory
-    params->input_file = input_path;
-    params->output_file = output_path;
+    struct argparse_option options[] = {
+        OPT_HELP(),
+        OPT_STRING('i', "input", &input_path, "Input file path", NULL, 0, 0),
+        OPT_INTEGER('s', "skip", &offset, "Header skip / Data beginning offset (default 0)", NULL, 0, 0),
+        OPT_INTEGER('c', "channels", &channels, "Number of channels (default 1)", NULL, 0, 0),
+        OPT_INTEGER('l', "interleave", &interleave, "Interleave between channels (default 16)", NULL, 0, 0),
+        OPT_INTEGER('n', "chunks", &chunks, "Number of chunks to be read (default 0 ie all)", NULL, 0, 0),
+        OPT_INTEGER('f', "frequency", &frequency, "Audio frequency (in hz)", NULL, 0, 0),
+        OPT_STRING('o', "output", &output_path,
+                   "Output file path "
+                   "(default is input file path with replaced wav extension)",
+                   NULL, 0, 0),
+        OPT_END()};
 
-    int opt = -1;
-    int ret = 0;
+    struct argparse argparse;
+    argparse_init(&argparse, options, usages, 0);
 
-    while ((opt = getopt(argc, argv, "i:s:c:l:n:o:f:h")) != -1)
+    argc = argparse_parse(&argparse, argc, argv);
+
+    if (argc < 0)
     {
-        switch (opt)
-        {
-        case 'i':
-            strncpy(input_path, optarg, TOTAL_PATH_LEN);
-            break;
-        case 's':
-            if (str_to_int(optarg, &offset))
-            {
-                print_error("Invalid argument for offset.");
-                ret = -EINVAL;
-                goto error;
-            }
-            break;
-        case 'c':
-            if (str_to_int(optarg, &channels))
-            {
-                print_error("Invalid argument for channels.");
-                ret = -EINVAL;
-                goto error;
-            }
-            break;
-        case 'l':
-            if (str_to_int(optarg, &interleave))
-            {
-                print_error("Invalid argument for interleave.");
-                ret = -EINVAL;
-                goto error;
-            }
-            break;
-        case 'n':
-            if (str_to_int(optarg, &chunks))
-            {
-                print_error("Invalid argument for chunks.");
-                ret = -EINVAL;
-                goto error;
-            }
-            break;
-        case 'o':
-            // output_path = strcpy(optarg);
-            strncpy(output_path, optarg, TOTAL_PATH_LEN);
-            break;
-        case 'f':
-            if (str_to_int(optarg, &frequency))
-            {
-                print_error("Invalid argument for frequency.");
-                ret = -EINVAL;
-                goto error;
-            }
-            break;            
-        default:
-            printf(
-                "Convert 4-bit PlayStation ADPCM to wav file.\n"
-                "\n"
-                "Usage:\n"
-                "    psxadec -i <in> [options] -f <frequency>\n"
-                "\n"
-                "Options:\n"
-                "  Required:\n"
-                "    -i          Input file path\n"
-                "    -f          Audio frequency (in hz)\n"
-                "  Optional:\n"
-                "    -s          Header skip / Data beginning offset (default 0)\n"
-                "    -c          Number of channels (default 1)\n"
-                "    -l          Interleave between channels (default 16)\n"
-                "    -n          Number of chunks to be read (default 0 ie all)\n"
-                "    -o          Output file path (default is input file path with replaced wav extension)\n"
-                "\n"
-                "Example usages:\n"
-                "    psxadec -h                       Print this help dialog\n"
-                "    psxadec -i ./file.vag -f 44100\n"
-                "    psxadec -i ./file.vag -c 2 -s 0x4000 -l 0x8000 -f 48000\n"
-                "    psxadec -i ./file.vag -c 1 -s 32 -f 22500 -o ./file.wav\n"
-            );
-            ret = (opt == 'h') ? 1 : -EINVAL;
-            goto error;
-        }
+        argparse_usage(&argparse);
+        return -EINVAL;
     }
 
     /**
      * Input error handling
      */
-    if (strnlen(input_path, 2) == 0)
+    if (input_path == NULL)
     {
         print_error("Input path not present\n");
-        ret = -EINVAL;
-        goto error;
+        argparse_usage(&argparse);
+
+        return -EINVAL;
     }
     if (offset < 0)
     {
@@ -130,14 +81,16 @@ int read_param(int argc, char *argv[], adpcm_parameters *params)
     if (channels >= 2 && interleave <= 0)
     {
         print_error("Multichannel audio has to have interleave.\n");
-        ret = -EINVAL;
-        goto error;
+        argparse_usage(&argparse);
+
+        return -EINVAL;
     }
     if (frequency <= 0)
     {
         print_error("Frequency has to be a positive number\n");
-        ret = -EINVAL;
-        goto error;
+        argparse_usage(&argparse);
+
+        return -EINVAL;
     }
     if (interleave <= 0)
     {
@@ -160,13 +113,15 @@ int read_param(int argc, char *argv[], adpcm_parameters *params)
     }
 
     // No output path given, try to create one
-    if (strnlen(output_path, 2) == 0)
+    if (output_path == NULL)
     {
+        output_path = fallback_output_path;
         ret = create_output_file_path(input_path, output_path);
     }
     if (ret)
     {
-        goto error;
+        print_error("Error creating the output path. Please try again.\n");
+        return ret;
     }
 
     params->channels = channels;
@@ -174,8 +129,8 @@ int read_param(int argc, char *argv[], adpcm_parameters *params)
     params->interleave = interleave;
     params->offset = offset;
     params->frequency = frequency;
-
-error:
+    params->input_file = input_path;
+    params->output_file = output_path;
     return ret;
 }
 
@@ -184,21 +139,26 @@ int create_output_file_path(char *input_path, char *output_path)
     int ret = 0;
 
 #ifdef _WIN32
-    char drive[DRIVE_LETTER_LEN];
-    char directory[PATH_LEN];
-    char filename[FILENAME_LEN];
-    ret = _splitpath_s(input_path, drive, DRIVE_LETTER_LEN, directory, PATH_LEN,
-                       filename, FILENAME_LEN, NULL, 0);
-    strcpy(output_path, drive);     // Copy over drive name
-    strcat(output_path, directory); // Add directory
-    strcat(output_path, filename);  // Add filename
-    strcat(output_path, ".wav");    // Add extension
+    char drive[_MAX_DRIVE];
+    char directory[_MAX_DIR];
+    char filename[_MAX_FNAME];
+    ret = _splitpath_s(input_path, drive, _MAX_DRIVE, directory, _MAX_DIR, filename, _MAX_FNAME, NULL, 0);
+    if (ret)
+    {
+        return ret;
+    }
 
-    return ret;
+    ret = snprintf(output_path, TOTAL_PATH_LEN, "%s%s%s.wav", drive, directory, filename);
+    if (ret > TOTAL_PATH_LEN)
+    {
+        return -EINVAL;
+    }
+    
+    return 0;
 #elif defined __unix__
     char *directory;
     char *bname;
-    char temp_input_path[FILENAME_LEN] = {0};  // Because libgen's basename modifies the original array
+    char temp_input_path[FILENAME_LEN] = {0}; // Because libgen's basename modifies the original array
     char filename[FILENAME_LEN] = {0};
 
     strncpy(temp_input_path, input_path, FILENAME_LEN);
@@ -214,7 +174,7 @@ int create_output_file_path(char *input_path, char *output_path)
     }
     else
     {
-        long filename_length = last_dot - bname;  // Not good
+        long filename_length = last_dot - bname; // Not good
         strncpy(filename, bname, FILENAME_LEN > filename_length ? filename_length : FILENAME_LEN);
     }
 
@@ -225,24 +185,4 @@ int create_output_file_path(char *input_path, char *output_path)
 
     return ret;
 #endif
-}
-
-void free_param_struct(adpcm_parameters *parameters)
-{
-    if (parameters == NULL)
-    {
-        return;
-    }
-    if (parameters->input_file != NULL)
-    {
-        free(parameters->input_file);
-        parameters->input_file = NULL;
-    }
-    if (parameters->output_file != NULL)
-    {
-        free(parameters->output_file);
-        parameters->output_file = NULL;
-    }
-    free(parameters);
-    parameters = NULL;
 }

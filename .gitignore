@@ -9,3 +9,6 @@ Makefile
 
 # VSCode
 .vscode
+
+# clang
+.cache

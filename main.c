@@ -70,7 +70,7 @@ void interleave_channels(int channels, int buffer_length, int16_t *in_buffer, in
 
 
 
-int main(int argc, char *argv[])
+int main(int argc, const char **argv)
 {
     start_time = timespec_get(&ts, TIME_UTC) != 0 ? SEC_TO_NS((uint64_t)ts.tv_sec) + (uint64_t)ts.tv_nsec : 0;
 
@@ -80,12 +80,10 @@ int main(int argc, char *argv[])
 
     if (ret)
     {
-        free_param_struct(parameters);
         return ret;
     }
 
     ret = convert_file(parameters);
-    free_param_struct(parameters);
 
     if (timespec_get(&ts, TIME_UTC) != 0)
     {

@@ -30,7 +30,7 @@ typedef struct {
  * @retval 0 on success
  * @retval -EINVAL if any of arguments has invalid data
  */
-int read_param(int argc, char *argv[], adpcm_parameters *params);
+int read_param(int argc, const char **argv, adpcm_parameters *params);
 
 /**
  * Create a path for output file
@@ -46,18 +46,5 @@ int read_param(int argc, char *argv[], adpcm_parameters *params);
  * @retval 0 on success
  */
 int create_output_file_path(char *input_path, char *output_path);
-
-/**
- * Free adpcm_parameters struct
- * 
- * Free input_file and output_file, make them point to NULL
- * Also free the parameters struct and make the pointer NULL
- * 
- * @warning Pointers have to be created with malloc() and they can't have been
- * freed before. NULL pointers will be ignored.
- * 
- * @param parameters pointer to adpcm_parameters struct that will be freed
- */
-void free_param_struct(adpcm_parameters *parameters);
 
 #endif

@@ -1,0 +1,15 @@
+---
+AllowShortBlocksOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+BasedOnStyle: LLVM
+BreakBeforeBraces: Allman
+ColumnLimit: 120
+IndentWidth: 4
+InsertBraces: true
+InsertNewlineAtEOF: true
+PointerAlignment: Right
+SortIncludes: true
+UseTab: Never

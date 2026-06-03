@@ -1,19 +1,15 @@
 cmake_minimum_required(VERSION 3.10)
 
-if (WIN32)
-    message("Compiling for Windows")
-    set(CMAKE_C_COMPILER C:/msys64/ucrt64/bin/gcc.exe)
-    set(CMAKE_CXX_COMPILER C:/msys64/ucrt64/bin/g++.exe)
-else()
-    message("Compiling for Linux")
-    set(CMAKE_C_COMPILER /usr/bin/gcc)
-    set(CMAKE_CXX_COMPILER /usr/bin/g++)
-endif()
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
 project(psxadec)
 
-file(GLOB SOURCES src/*.c)
+add_subdirectory(libs)
 
+file(GLOB SOURCES src/*.c)
 include_directories(${PROJECT_SOURCE_DIR}/inc)
 
 add_executable(psxadec main.c ${SOURCES})
+
+target_link_libraries(psxadec PRIVATE argparse)
