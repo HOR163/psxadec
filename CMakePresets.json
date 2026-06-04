@@ -2,12 +2,54 @@
     "version": 3,
     "configurePresets": [
         {
+            "name": "base",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "TRUE"
+            }
+        },
+        {
+            "name": "windows",
+            "displayName": "Windows (UCRT64)",
+            "inherits": "base",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            },
+            "generator": "MinGW Makefiles",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "C:/msys64/ucrt64/bin/gcc.exe",
+                "CMAKE_CXX_COMPILER": "C:/msys64/ucrt64/bin/g++.exe"
+            }
+        },
+        {
+            "name": "linux",
+            "displayName": "Linux (GCC)",
+            "inherits": "base",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Linux"
+            },
+            "generator": "Unix Makefiles"
+        },
+        {
             "name": "default",
             "displayName": "Default Config",
-            "binaryDir": "${sourceDir}/build"
+            "inherits": "base"
         }
     ],
     "buildPresets": [
+        {
+            "name": "windows",
+            "configurePreset": "windows"
+        },
+        {
+            "name": "linux",
+            "configurePreset": "linux"
+        },
         {
             "name": "default",
             "configurePreset": "default"
