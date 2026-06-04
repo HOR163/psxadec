@@ -15,6 +15,7 @@
 static char fallback_output_path[TOTAL_PATH_LEN] = {0};
 
 static const char *const usages[] = {
+    "psxadec -i file -f frequency [-s skip] [-c channels] [-l interleave] [-n chunks] [-o file]",
     "psxadec -i ./file.vag -f 44100",
     "psxadec -i ./file.vag -c 2 -s 0x4000 -l 0x8000 -f 48000",
     "psxadec -i ./file.vag -c 1 -s 32 -f 22500 -o ./file.wav",
@@ -23,7 +24,7 @@ static const char *const usages[] = {
 
 int read_param(int argc, const char **argv, adpcm_parameters *params)
 {
-    int ret;
+    int ret = 0;
 
     int offset = 0;
     int interleave = 16;
@@ -35,12 +36,12 @@ int read_param(int argc, const char **argv, adpcm_parameters *params)
 
     struct argparse_option options[] = {
         OPT_HELP(),
-        OPT_STRING('i', "input", &input_path, "Input file path", NULL, 0, 0),
+        OPT_STRING('i', "input", &input_path, "[REQUIRED] Input file path", NULL, 0, 0),
+        OPT_INTEGER('f', "frequency", &frequency, "[REQUIRED] Audio frequency (in hz)", NULL, 0, 0),
         OPT_INTEGER('s', "skip", &offset, "Header skip / Data beginning offset (default 0)", NULL, 0, 0),
         OPT_INTEGER('c', "channels", &channels, "Number of channels (default 1)", NULL, 0, 0),
         OPT_INTEGER('l', "interleave", &interleave, "Interleave between channels (default 16)", NULL, 0, 0),
         OPT_INTEGER('n', "chunks", &chunks, "Number of chunks to be read (default 0 ie all)", NULL, 0, 0),
-        OPT_INTEGER('f', "frequency", &frequency, "Audio frequency (in hz)", NULL, 0, 0),
         OPT_STRING('o', "output", &output_path,
                    "Output file path "
                    "(default is input file path with replaced wav extension)",
@@ -153,7 +154,11 @@ int create_output_file_path(char *input_path, char *output_path)
     {
         return -EINVAL;
     }
-    
+    if (ret < 0)
+    {
+        return ret;
+    }
+
     return 0;
 #elif defined __unix__
     char *directory;
@@ -174,15 +179,23 @@ int create_output_file_path(char *input_path, char *output_path)
     }
     else
     {
-        long filename_length = last_dot - bname; // Not good
-        strncpy(filename, bname, FILENAME_LEN > filename_length ? filename_length : FILENAME_LEN);
+        long filename_length = last_dot - bname;
+        uint16_t copy_len = FILENAME_LEN > filename_length ? filename_length : FILENAME_LEN;
+        strncpy(filename, bname, copy_len);
+        filename[copy_len] = '\0';
     }
 
-    strncpy(output_path, directory, PATH_LEN);
-    strcat(output_path, "/");
-    strncat(output_path, filename, FILENAME_LEN);
-    strcat(output_path, ".wav");
+    ret = snprintf(output_path, TOTAL_PATH_LEN, "%s/%s.wav", directory, filename);
+    if (ret > TOTAL_PATH_LEN)
+    {
+        return -EINVAL;
+    }
 
-    return ret;
+    if (ret < 0)
+    {
+        return ret;
+    }
+
+    return 0;
 #endif
 }
