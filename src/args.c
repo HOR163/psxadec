@@ -65,57 +65,59 @@ int read_param(int argc, const char **argv, adpcm_parameters *params)
      */
     if (input_path == NULL)
     {
-        print_error("Input path not present\n");
+        print_err("Input path not present\n");
         argparse_usage(&argparse);
 
         return -EINVAL;
     }
     if (offset < 0)
     {
-        print_warning("Offset should be an integer greater than or equal to 0. Defaulting to 0.\n");
+        print_wrn("Offset should be an integer greater than or equal to 0. Defaulting to 0.\n");
         offset = 0;
     }
     if (channels < 1)
     {
-        print_warning("Number of channels should be an integer greater than or equal to 1. Defaulting to 1.\n");
+        print_wrn("Number of channels should be an integer greater than or equal to 1. Defaulting to 1.\n");
         channels = 1;
     }
     if (channels > UINT8_MAX)
     {
-        print_error("Number of channels can not be bigger than 255\n");
+        print_err("Number of channels can not be bigger than 255\n");
+        argparse_usage(&argparse);
+
         return -EINVAL;
     }
     if (channels >= 2 && interleave <= 0)
     {
-        print_error("Multichannel audio has to have interleave.\n");
+        print_err("Multichannel audio has to have interleave.\n");
         argparse_usage(&argparse);
 
         return -EINVAL;
     }
     if (frequency <= 0)
     {
-        print_error("Frequency has to be a positive number\n");
+        print_err("Frequency has to be a positive number\n");
         argparse_usage(&argparse);
 
         return -EINVAL;
     }
     if (interleave <= 0)
     {
-        print_warning("Interleave should be positive. Defaulting to 16.\n");
+        print_wrn("Interleave should be positive. Defaulting to 16.\n");
         interleave = 16;
     }
     if (channels == 1 && interleave != 16)
     {
-        print_warning("Mono audio always uses interleave 16.\n");
+        print_wrn("Mono audio always uses interleave 16.\n");
         interleave = 16;
     }
     if (channels >= 2 && interleave < 0x1000)
     {
-        print_warning("For audio with 2+ channels the current interleave value seems too small.\n");
+        print_wrn("For audio with 2+ channels the current interleave value seems too small.\n");
     }
     if (chunks < 0)
     {
-        print_warning("Chunks should be an integer greater than or equal to 1. Defaulting to 0 (Read all chunks).\n");
+        print_wrn("Chunks should be an integer greater than or equal to 1. Defaulting to 0 (Read all chunks).\n");
         chunks = 0;
     }
 
@@ -127,7 +129,7 @@ int read_param(int argc, const char **argv, adpcm_parameters *params)
     }
     if (ret)
     {
-        print_error("Error creating the output path. Please try again.\n");
+        print_err("Error creating the output path. Please try again.\n");
         return ret;
     }
 
@@ -185,7 +187,7 @@ int create_output_file_path(char *input_path, char *output_path)
     }
     else
     {
-        long filename_length = last_dot - bname;
+        uint16_t filename_length = last_dot - bname;
         uint16_t copy_len = FILENAME_LEN > filename_length ? filename_length : FILENAME_LEN;
         strncpy(filename, bname, copy_len);
         filename[copy_len] = '\0';
@@ -205,5 +207,7 @@ int create_output_file_path(char *input_path, char *output_path)
     return 0;
 #else
 #error Unsupported platform
+
+return -ENOSYS;
 #endif
 }

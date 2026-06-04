@@ -78,14 +78,13 @@ static int check_for_incomplete_chunk(adpcm_parameters *params, uint32_t data_le
     {
         chunk_length_in_seconds = ((float)params->interleave / BYTES_PER_ADPCM_SAMPLE * ADPCM_OUPUT_BUFFER_SIZE_16) /
                                   (float)params->frequency;
-        print_warning("Input file has non-complete chunks at the end of the file. These chunks "
-                      "will be included in the conversion result, but there might be audio loss "
-                      "(with mono the audio will be shorter; with more channels, one channel "
-                      "will cut out before others)\n");
-
         float number_of_samples = (float)data_length / (float)single_sample_size;
-        printf(" Maximum length affected: %.5f seconds.\n",
-               (1 - (number_of_samples - (uint32_t)number_of_samples)) * chunk_length_in_seconds);
+        print_wrn("Input file has non-complete chunks at the end of the file. These chunks "
+                  "will be included in the conversion result, but there might be audio loss "
+                  "(with mono the audio will be shorter; with more channels, one channel "
+                  "will cut out before others)\n"
+                  "Maximum length affected %.5f seconds.\n",
+                  (1 - (number_of_samples - (uint32_t)number_of_samples)) * chunk_length_in_seconds);
     }
     return 0;
 }
@@ -155,13 +154,13 @@ int convert_file(adpcm_parameters *params)
 
     if (finput == NULL)
     {
-        print_error("Couldn't open input file\n");
+        print_err("Couldn't open input file\n");
         return -ENOENT;
     }
     if (foutput == NULL)
     {
         fclose(finput);
-        print_error("Couldn't open output file\n");
+        print_err("Couldn't open output file\n");
         return -ENOENT;
     }
 
