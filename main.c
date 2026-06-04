@@ -116,7 +116,10 @@ int main(int argc, const char **argv)
 
 int convert_file(adpcm_parameters *params)
 {
-    INIT_WAVE_HEADER(header);
+    wav_header header;
+
+    init_wav_header(&header);
+
     FILE *finput;
     FILE *foutput;
 

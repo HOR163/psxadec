@@ -197,5 +197,7 @@ int create_output_file_path(char *input_path, char *output_path)
     }
 
     return 0;
+#else
+#error Unsupported platform
 #endif
 }
