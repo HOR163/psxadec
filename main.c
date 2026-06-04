@@ -1,14 +1,16 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdlib.h>
-#include <time.h>
 #include <errno.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
-#include "wav_file.h"
+
 #include "adpcm.h"
-#include "print_conv.h"
 #include "args.h"
+#include "print_conv.h"
+#include "wav_file.h"
+
 
 #define SEC_TO_NS(sec) ((sec) * 1000000000)
 
@@ -50,7 +52,7 @@ int check_for_incomplete_chunk(adpcm_parameters *params, long data_length);
  * subsequently (ie |channel1|channel2|channel3|), interleave them into another
  * buffer (out_buffer) without changing the input buffer. The size of each
  * channel is specified in buffer_length
- * 
+ *
  * Example:
  *   channels = 3
  *   buffer_length = 3
@@ -67,8 +69,6 @@ int check_for_incomplete_chunk(adpcm_parameters *params, long data_length);
  * size as in_buffer
  */
 void interleave_channels(int channels, int buffer_length, int16_t *in_buffer, int16_t *out_buffer);
-
-
 
 int main(int argc, const char **argv)
 {
@@ -87,13 +87,12 @@ int main(int argc, const char **argv)
 
     if (timespec_get(&ts, TIME_UTC) != 0)
     {
-        printf("Finished in %f ms\n", (double)(SEC_TO_NS((uint64_t)ts.tv_sec) + (uint64_t)ts.tv_nsec - start_time) / 1000000);
+        printf("Finished in %f ms\n",
+               (double)(SEC_TO_NS((uint64_t)ts.tv_sec) + (uint64_t)ts.tv_nsec - start_time) / 1000000);
     }
 
     return ret;
 }
-
-
 
 int convert_file(adpcm_parameters *params)
 {
@@ -162,8 +161,7 @@ int convert_file(adpcm_parameters *params)
             {
                 decode_adpcm_block((uint8_t *)(in_chunk + sample_index * 16 + channel * params->interleave),
                                    (int16_t *)(out_chunk + sample_index * 28 + channel * out_channel_length),
-                                   (int16_t *)(old + 2 * channel + 1),
-                                   (int16_t *)(old + 2 * channel));
+                                   (int16_t *)(old + 2 * channel + 1), (int16_t *)(old + 2 * channel));
             }
         }
         interleave_channels(params->channels, out_channel_length, out_chunk, out_interleaved);
@@ -205,7 +203,9 @@ int check_for_incomplete_chunk(adpcm_parameters *params, long data_length)
                       "will be included in the conversion result, but there might be audio loss "
                       "(with mono the audio will be shorter; with more channels, one channel "
                       "will cut out before others)\n");
-        printf(" Maximum length affected: %.5f seconds.\n", (1 - (float)((float)data_length / single_sample_size - (int)(data_length / single_sample_size))) * chunk_length_in_seconds);
+        printf(" Maximum length affected: %.5f seconds.\n",
+               (1 - (float)((float)data_length / single_sample_size - (int)(data_length / single_sample_size))) *
+                   chunk_length_in_seconds);
     }
     return 0;
 }
@@ -223,8 +223,7 @@ inline void interleave_channels(int channels, int buffer_length, int16_t *in_buf
         for (int index = 0; index < buffer_length; index++)
         {
             memcpy((int16_t *)(out_buffer + index * channels + channel),
-                   (int16_t *)(in_buffer + index + buffer_length * channel),
-                   sizeof(int16_t));
+                   (int16_t *)(in_buffer + index + buffer_length * channel), sizeof(int16_t));
         }
     }
 }

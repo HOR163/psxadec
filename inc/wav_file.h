@@ -3,10 +3,9 @@
 
 #include <stdint.h>
 
-#define INIT_WAVE_HEADER(X) wav_header X = {.riff_identifier = "RIFF", \
-                                            .wave_identifier = "WAVE", \
-                                            .fmt_identifier = "fmt ",  \
-                                            .data_identifier = "data"}
+#define INIT_WAVE_HEADER(X)                                                                                            \
+    wav_header X = {                                                                                                   \
+        .riff_identifier = "RIFF", .wave_identifier = "WAVE", .fmt_identifier = "fmt ", .data_identifier = "data"}
 
 typedef struct
 {
