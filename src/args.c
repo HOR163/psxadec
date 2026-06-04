@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <stdint.h>
 #include <stdio.h>
 
 #include <stdlib.h>
@@ -79,6 +80,11 @@ int read_param(int argc, const char **argv, adpcm_parameters *params)
         print_warning("Number of channels should be an integer greater than or equal to 1. Defaulting to 1.\n");
         channels = 1;
     }
+    if (channels > UINT8_MAX)
+    {
+        print_error("Number of channels can not be bigger than 255\n");
+        return -EINVAL;
+    }
     if (channels >= 2 && interleave <= 0)
     {
         print_error("Multichannel audio has to have interleave.\n");
@@ -125,11 +131,11 @@ int read_param(int argc, const char **argv, adpcm_parameters *params)
         return ret;
     }
 
-    params->channels = channels;
-    params->chunks = chunks;
-    params->interleave = interleave;
-    params->offset = offset;
-    params->frequency = frequency;
+    params->channels = (uint8_t)channels;
+    params->chunks = (uint32_t)chunks;
+    params->interleave = (uint32_t)interleave;
+    params->offset = (uint32_t)offset;
+    params->frequency = (uint32_t)frequency;
     params->input_file = input_path;
     params->output_file = output_path;
     return ret;

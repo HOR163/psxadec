@@ -1,6 +1,8 @@
 #ifndef ARGS_H
 #define ARGS_H
 
+#include <stdint.h>
+
 #define DRIVE_LETTER_LEN 16
 #define PATH_LEN 512
 #define FILENAME_LEN 256
@@ -10,11 +12,11 @@ typedef struct
 {
     char *input_file;
     char *output_file;
-    int offset;
-    int interleave;
-    int channels;
-    int chunks;
-    int frequency;
+    uint32_t offset;
+    uint32_t interleave;
+    uint8_t channels;
+    uint32_t chunks;
+    uint32_t frequency;
 } adpcm_parameters;
 
 /**

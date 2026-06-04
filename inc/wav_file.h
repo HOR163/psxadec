@@ -15,6 +15,9 @@
 #define STRUCT_PACK_END
 #endif
 
+#define WAV_AUDIO_FORMAT_PCM ((uint16_t)1)
+#define WAV_AUDIO_FMT_CHUNK_SIZE ((uint16_t)16)
+
 STRUCT_PACK_START
 typedef struct
 {
