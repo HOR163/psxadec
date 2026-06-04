@@ -1,0 +1,73 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  create-release:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          gh release create "$TAG_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "psxadec $TAG_NAME" \
+            --notes "Automated release. Commit: ${COMMIT_SHA}"
+
+  build-and-upload:
+    needs: create-release
+    permissions:
+      contents: write
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            preset: linux
+            platform: linux
+            ext: tar.gz
+          - os: windows-latest
+            preset: default
+            platform: windows
+            ext: zip
+    env:
+      TAG_NAME: ${{ github.ref_name }}
+      COMMIT_SHA: ${{ github.sha }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release --preset ${{ matrix.preset }}
+    - name: Build project
+      run: cmake --build build --config Release
+    - name: Archive Artifact (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      shell: bash
+      run: |
+        cd build
+        tar -czf "../psxadec-${TAG_NAME}-linux.tar.gz" psxadec
+    - name: Archive Artifact (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        cd build/Release
+        Compress-Archive -Path psxadec.exe -DestinationPath "../../psxadec-${env:TAG_NAME}-windows.zip"
+    - name: Upload to GitHub Release
+      shell: bash
+      env:
+        PLATFORM: ${{ matrix.platform }}
+        EXT: ${{ matrix.ext }}
+      run: |
+        ARCHIVE_FILE="psxadec-${TAG_NAME}-${PLATFORM}.${EXT}"
+        gh release upload "$TAG_NAME" "$ARCHIVE_FILE" --clobber
